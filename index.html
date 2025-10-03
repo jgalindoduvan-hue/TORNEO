@@ -1,0 +1,367 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>🏆 Torneo de Mili</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: black;
+      color: white;
+      overflow: hidden;
+    }
+
+    /* --- Paneles base --- */
+    .panel {
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 18px;
+      padding: 15px;
+      margin: 10px;
+    }
+
+    /* Colores personalizados */
+    .panel.participantes {
+      border: 2px solid #ff007f;
+      box-shadow: 0 0 12px #ff007f, 0 0 25px #ff007f;
+      animation: glowPulsePink 3s infinite;
+    }
+    .panel.centro {
+      border: 2px solid #00ffff;
+      box-shadow: 0 0 12px #00ffff, 0 0 25px #00ffff;
+      animation: glowPulseCyan 3s infinite;
+      text-align: center;
+    }
+    .panel.resultados {
+      border: 2px solid #ffae00;
+      box-shadow: 0 0 12px #ffae00, 0 0 25px #ffae00;
+      animation: glowPulseOrange 3s infinite;
+    }
+
+    /* Animaciones Glow */
+    @keyframes glowPulsePink {
+      0% { box-shadow: 0 0 12px #ff007f, 0 0 25px #ff007f; }
+      50% { box-shadow: 0 0 25px #ff007f, 0 0 50px #ff007f; }
+      100% { box-shadow: 0 0 12px #ff007f, 0 0 25px #ff007f; }
+    }
+    @keyframes glowPulseCyan {
+      0% { box-shadow: 0 0 12px #00ffff, 0 0 25px #00ffff; }
+      50% { box-shadow: 0 0 25px #00ffff, 0 0 50px #00ffff; }
+      100% { box-shadow: 0 0 12px #00ffff, 0 0 25px #00ffff; }
+    }
+    @keyframes glowPulseOrange {
+      0% { box-shadow: 0 0 12px #ffae00, 0 0 25px #ffae00; }
+      50% { box-shadow: 0 0 25px #ffae00, 0 0 50px #ffae00; }
+      100% { box-shadow: 0 0 12px #ffae00, 0 0 25px #ffae00; }
+    }
+
+    /* Layout en 3 columnas */
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 2fr 1fr;
+      height: 100vh;
+      gap: 15px;
+      padding: 15px;
+      box-sizing: border-box;
+    }
+
+    h2 {
+      margin-top: 0;
+      text-shadow: 0 0 8px currentColor;
+    }
+
+    input, button {
+      display: block;
+      margin: 10px auto;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+    }
+
+    input {
+      width: 80%;
+      padding: 8px;
+    }
+
+    button {
+      background: #ff6a00;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 10px #ff6a00, 0 0 20px #ff6a00;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    li {
+      margin: 5px 0;
+      padding: 6px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.1);
+    }
+
+    /* Scroll en Participantes y Resultados */
+    #listaParticipantes, #resultados {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    /* Combate VS */
+    #combate {
+      margin-top: 20px;
+    }
+    .jugador {
+      display: inline-block;
+      margin: 10px;
+      padding: 15px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.1);
+      box-shadow: 0 0 12px #00ffff, 0 0 20px #ff00ff;
+    }
+
+    /* Canvas fondo */
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: -1;
+    }
+
+    /* Modal del ganador */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85);
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    .modal-content {
+      background: black;
+      border: 3px solid #FFD700;
+      color: white;
+      padding: 20px;
+      border-radius: 15px;
+      text-align: center;
+      font-size: 24px;
+      box-shadow: 0 0 25px gold;
+    }
+    .modal-content h2 {
+      margin-bottom: 15px;
+      text-shadow: 0 0 12px gold;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="heartCanvas"></canvas>
+
+  <div class="container">
+    <!-- Panel izquierda -->
+    <div class="panel participantes">
+      <h2>🎮 Participantes en juego</h2>
+      <ul id="listaParticipantes"></ul>
+    </div>
+
+    <!-- Panel central -->
+    <div class="panel centro">
+      <h2>🏆 Torneo de Mili</h2>
+      <p>Escribe los nombres de los participantes y presiona Enter:</p>
+      <input type="text" id="inputNombre" placeholder="Nombre participante...">
+      <button id="btnIniciar">🎯 Iniciar Primera Fase</button>
+      <h3 id="faseActual"></h3>
+      <div id="combate"></div>
+    </div>
+
+    <!-- Panel derecha -->
+    <div class="panel resultados">
+      <h2>📜 Resultados</h2>
+      <ul id="resultados"></ul>
+    </div>
+  </div>
+
+  <!-- Modal del ganador -->
+  <div id="modalGanador" class="modal">
+    <div class="modal-content">
+      <h2>🏆 ¡Ganador del Torneo! 🏆</h2>
+      <p id="nombreGanador"></p>
+      <button onclick="cerrarModal()">Cerrar</button>
+    </div>
+  </div>
+
+  <script>
+    const inputNombre = document.getElementById("inputNombre");
+    const lista = document.getElementById("listaParticipantes");
+    const btnIniciar = document.getElementById("btnIniciar");
+    const resultados = document.getElementById("resultados");
+    const combate = document.getElementById("combate");
+    const faseActual = document.getElementById("faseActual");
+
+    let participantes = [];
+    let enfrentamientos = [];
+    let ganadores = [];
+    let indexCombate = 0;
+    let fase = 1;
+
+    // Agregar con Enter
+    inputNombre.addEventListener("keypress", function(e) {
+      if (e.key === "Enter") agregarParticipante();
+    });
+
+    function agregarParticipante() {
+      const nombre = inputNombre.value.trim();
+      if (nombre && !participantes.includes(nombre)) {
+        participantes.push(nombre);
+        const li = document.createElement("li");
+        li.textContent = nombre;
+        lista.appendChild(li);
+        inputNombre.value = "";
+      }
+    }
+
+    // Iniciar torneo
+    btnIniciar.addEventListener("click", () => {
+      if (participantes.length < 2) {
+        alert("Se necesitan al menos 2 participantes");
+        return;
+      }
+      iniciarFase(participantes);
+    });
+
+    function iniciarFase(jugadores) {
+      // Mezclar aleatoriamente jugadores
+      jugadores = [...jugadores];
+      for (let i = jugadores.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [jugadores[i], jugadores[j]] = [jugadores[j], jugadores[i]];
+      }
+
+      ganadores = [];
+      indexCombate = 0;
+      enfrentamientos = [];
+
+      for (let i = 0; i < jugadores.length; i += 2) {
+        if (i + 1 < jugadores.length) {
+          enfrentamientos.push([jugadores[i], jugadores[i + 1]]);
+        } else {
+          enfrentamientos.push([jugadores[i]]);
+        }
+      }
+
+      faseActual.textContent = `⚔️ Fase ${fase}`;
+      mostrarCombate();
+    }
+
+    function mostrarCombate() {
+      combate.innerHTML = "";
+      if (indexCombate >= enfrentamientos.length) {
+        if (ganadores.length === 1) {
+          mostrarGanador(ganadores[0]);
+          return;
+        }
+        participantes = [...ganadores];
+        fase++;
+        const btn = document.createElement("button");
+        btn.textContent = `➡️ Iniciar Fase ${fase}`;
+        btn.onclick = () => iniciarFase(participantes);
+        combate.appendChild(btn);
+        return;
+      }
+
+      const duelo = enfrentamientos[indexCombate];
+      if (duelo.length === 1) {
+        ganadores.push(duelo[0]);
+        resultados.innerHTML += `<li>✅ ${duelo[0]} pasa automáticamente</li>`;
+        indexCombate++;
+        mostrarCombate();
+      } else {
+        const [j1, j2] = duelo;
+        combate.innerHTML = `
+          <div class="jugador">
+            <h3>${j1}</h3>
+            <button onclick="seleccionarGanador('${j1}')">Ganador</button>
+          </div>
+          <span style="font-size:22px; margin:0 15px;">VS</span>
+          <div class="jugador">
+            <h3>${j2}</h3>
+            <button onclick="seleccionarGanador('${j2}')">Ganador</button>
+          </div>
+        `;
+      }
+    }
+
+    function seleccionarGanador(nombre) {
+      ganadores.push(nombre);
+      resultados.innerHTML += `<li>🏆 ${nombre}</li>`;
+      indexCombate++;
+      mostrarCombate();
+    }
+
+    function mostrarGanador(nombre) {
+      document.getElementById("nombreGanador").innerText = nombre;
+      document.getElementById("modalGanador").style.display = "flex";
+    }
+
+    function cerrarModal() {
+      document.getElementById("modalGanador").style.display = "none";
+    }
+
+    // Fondo corazones animados
+    const canvas = document.getElementById("heartCanvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const hearts = [];
+    class Heart {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = canvas.height + 20;
+        this.size = Math.random() * 15 + 10;
+        this.speed = Math.random() * 1.5 + 0.5;
+        this.color = `hsl(${Math.random() * 360}, 80%, 60%)`;
+      }
+      draw() {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.bezierCurveTo(this.x - this.size, this.y - this.size, this.x - this.size * 2, this.y + this.size / 2, this.x, this.y + this.size);
+        ctx.bezierCurveTo(this.x + this.size * 2, this.y + this.size / 2, this.x + this.size, this.y - this.size, this.x, this.y);
+        ctx.fill();
+      }
+      update() {
+        this.y -= this.speed;
+        this.x += Math.sin(this.y / 20) * 0.5;
+        this.draw();
+      }
+    }
+
+    function animate() {
+      ctx.fillStyle = "black";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      if (Math.random() < 0.05) hearts.push(new Heart());
+      hearts.forEach((heart, i) => {
+        heart.update();
+        if (heart.y < -20) hearts.splice(i, 1);
+      });
+      requestAnimationFrame(animate);
+    }
+    animate();
+    window.addEventListener("resize", () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+  </script>
+</body>
+</html>
